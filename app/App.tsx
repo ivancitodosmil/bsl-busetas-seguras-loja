@@ -47,6 +47,7 @@ function Navegacion() {
     <NavigationContainer
       ref={navegacion}
       linking={enlaces}
+      documentTitle={{ formatter: () => 'BSL · Busetas Seguras Loja' }}
       theme={{ ...base, colors: { ...base.colors, primary: c.primary, background: c.bg, card: c.surface, text: c.text, border: c.border, notification: c.danger } }}
     >
       <ProveedorToast>
