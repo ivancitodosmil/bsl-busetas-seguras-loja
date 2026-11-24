@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef, type LinkingOptions } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -31,6 +31,9 @@ if (modoDemo && typeof window !== 'undefined') {
 
 // bsl://i/9H4T6L2M o https://bsl.app/i/9H4T6L2M abren "Vincular" con el código ya escrito.
 const enlaces: LinkingOptions<ReactNavigation.RootParamList> = {
+  // En la web no se cambia la dirección del navegador: la app vive en una subcarpeta (GitHub Pages)
+  // y una dirección como /Ingreso daría error al recargar.
+  enabled: Platform.OS !== 'web',
   prefixes: ['bsl://', 'https://bsl.app'],
   config: { screens: { Vincular: 'i/:codigo' } as never },
 };
