@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>VSL 2.0 · Arquitectura general</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Lienzo 1600 × 880: tres bloques de izquierda a derecha y una franja de 4 pasos abajo */
+:root{--bg:#EEF2F7;--card:#FFFFFF;--line:#D3DCE8;--ink:#101D30;--ink2:#4A5B71;--navy:#1B4D89;--navy-soft:#E2ECFA;--amber:#E8930C;--amber-soft:#FFF3DC;--green:#1E9E62;--green-soft:#E1F5EB;--gray:#7A8799;--display:'Manrope',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{width:1600px;height:850px;position:relative;font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden}
+.abs{position:absolute}
+svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.head{left:60px;top:36px}
+.head h1{font:800 34px/1.1 var(--display);letter-spacing:-.02em}
+.head h1 span{color:var(--navy)}
+.head p{margin-top:8px;font-size:16px;color:var(--ink2)}
+.col-t{top:132px;font:800 13px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);display:flex;align-items:center;gap:10px}
+.col-t em{font-style:normal;width:24px;height:24px;border-radius:7px;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:12px;letter-spacing:0}
+.col-t small{font:600 12px var(--body);letter-spacing:0;text-transform:none;color:var(--gray)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px rgba(16,29,48,.04),0 8px 22px rgba(16,29,48,.06)}
+/* Columna 1 */
+.role{width:420px;height:130px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start}
+.role .bubble{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;flex:0 0 auto}
+.role .bubble svg.ic{width:26px;height:26px}
+.role h3{font:800 19px var(--display);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.role h3 small{font:600 11px var(--body);color:var(--gray);background:#F1F5FA;border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.role p{font-size:14.5px;line-height:1.45;color:var(--ink2)}
+.b-amber{background:var(--amber-soft);color:var(--amber)}
+.b-navy{background:var(--navy-soft);color:var(--navy)}
+.b-gray{background:#EEF1F5;color:#5B6B80}
+/* Columna 2 */
+.server{left:620px;top:170px;width:360px;height:470px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;border:1.5px solid #B9CBE2;background:#F7FAFE}
+.server h2{font:800 24px var(--display);display:flex;align-items:center;gap:10px}
+.server h2 svg.ic{color:var(--navy);width:28px;height:28px}
+.server .sub{font-size:14.5px;color:var(--ink2);margin-top:-6px;margin-bottom:2px}
+.svc{display:flex;gap:12px;align-items:center;padding:8px 12px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.svc svg.ic{color:var(--navy)}
+.svc b{font:700 15px var(--display);display:block}
+.svc span{font-size:13px;color:var(--ink2)}
+.svc.live{border-color:#F3C77A;background:#FFFBF2}
+.svc.live svg.ic{color:var(--amber)}
+.lock{margin-top:auto;display:flex;gap:10px;align-items:center;font-size:14px;font-weight:600;color:#0F2E55;background:var(--navy-soft);border-radius:12px;padding:11px 12px}
+.lock svg.ic{color:var(--navy);width:20px;height:20px}
+/* Columna 3 */
+.ext{width:420px;height:98px;padding:16px 18px;display:flex;gap:14px;align-items:center}
+.ext .bubble{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;background:#EEF1F5;color:#5B6B80}
+.ext.push{border-color:#9ED9BC;background:#F6FCF9}
+.ext.push .bubble{background:var(--green-soft);color:var(--green)}
+.ext h3{font:800 17px var(--display);margin-bottom:3px}
+.ext p{font-size:13.5px;line-height:1.4;color:var(--ink2)}
+/* Flechas */
+svg.wires{position:absolute;left:0;top:0;width:1600px;height:850px;pointer-events:none}
+.lbl{position:absolute;transform:translate(-50%,-50%);font:600 12.5px/1.3 var(--body);text-align:center;padding:4px 9px;border-radius:8px;background:var(--card);border:1px solid var(--line);white-space:nowrap}
+.lbl.amber{background:#FFF7E6;border-color:#F3C77A;color:#7A4800}
+.lbl.navy{background:#F1F6FD;border-color:#9DBCE5;color:#0F2E55}
+.lbl.green{background:#EEFAF4;border-color:#9ED9BC;color:#0E6B40}
+.lbl.gray{color:var(--ink2)}
+/* Pasos */
+.steps-t{left:60px;top:668px;font:800 16px var(--display)}
+.step{top:700px;width:345px;height:112px;padding:16px 18px;display:flex;gap:14px}
+.step .n{width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font:800 16px var(--display);flex:0 0 auto}
+.step.a .n{background:var(--amber)}
+.step.g .n{background:var(--green)}
+.step b{display:block;font:800 16px var(--display);margin-bottom:5px}
+.step p{font-size:14px;line-height:1.45;color:var(--ink2)}
+.chev{top:744px;width:14px;height:24px;color:#8C99AA}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+ <symbol id="i-bus" viewBox="0 0 24 24"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></symbol>
+ <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+ <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+ <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></symbol>
+ <symbol id="i-key" viewBox="0 0 24 24"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5"/></symbol>
+ <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></symbol>
+ <symbol id="i-radio" viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></symbol>
+ <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+ <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+ <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+ <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+ <symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></symbol>
+ <symbol id="i-sms" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></symbol>
+ <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+ <marker id="m-navy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#1B4D89"/></marker>
+ <marker id="m-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#E8930C"/></marker>
+ <marker id="m-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#1E9E62"/></marker>
+ <marker id="m-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#7A8799"/></marker>
+</defs></svg>
+
+<header class="abs head">
+  <h1><span>VSL 2.0</span> · Arquitectura general</h1>
+  <p>Vehículos Seguros Loja · cómo se conectan las apps, el servidor y los servicios externos</p>
+</header>
+
+<div class="abs col-t" style="left:60px"><em>1</em>Apps VSL <small>React Native + Expo</small></div>
+<div class="abs col-t" style="left:620px"><em>2</em>Servidor <small>Supabase</small></div>
+<div class="abs col-t" style="left:1120px"><em>3</em>Servicios externos</div>
+
+<!-- 1 · Apps -->
+<section class="abs card role" style="left:60px;top:170px">
+  <span class="bubble b-amber"><svg class="ic"><use href="#i-bus"/></svg></span>
+  <div><h3>Chofer <small>app móvil</small></h3><p>Inicia el recorrido y marca quién sube y quién baja. Funciona aunque se pierda la señal.</p></div>
+</section>
+<section class="abs card role" style="left:60px;top:330px">
+  <span class="bubble b-navy"><svg class="ic"><use href="#i-users"/></svg></span>
+  <div><h3>Representante <small>app móvil</small></h3><p>Ve la buseta en vivo, recibe avisos de sus hijos y reporta ausencias.</p></div>
+</section>
+<section class="abs card role" style="left:60px;top:490px">
+  <span class="bubble b-gray"><svg class="ic"><use href="#i-monitor"/></svg></span>
+  <div><h3>Administrador <small>panel web</small></h3><p>Verifica los documentos de los choferes y da soporte.</p></div>
+</section>
+
+<!-- 2 · Servidor -->
+<section class="abs card server">
+  <h2><svg class="ic"><use href="#i-cloud"/></svg>Supabase</h2>
+  <p class="sub">El servidor central de VSL</p>
+  <div class="svc"><svg class="ic"><use href="#i-key"/></svg><div><b>Inicio de sesión</b><span>Celular, Google o correo</span></div></div>
+  <div class="svc"><svg class="ic"><use href="#i-db"/></svg><div><b>Base de datos</b><span>Estudiantes, escuelas, rutas y recorridos</span></div></div>
+  <div class="svc live"><svg class="ic"><use href="#i-radio"/></svg><div><b>Tiempo real</b><span>Ubicación de la buseta al instante</span></div></div>
+  <div class="svc"><svg class="ic"><use href="#i-zap"/></svg><div><b>Funciones automáticas</b><span>Alertas, horarios y envío de avisos</span></div></div>
+  <div class="svc"><svg class="ic"><use href="#i-image"/></svg><div><b>Archivos</b><span>Fotos y documentos</span></div></div>
+  <div class="lock"><svg class="ic"><use href="#i-shield"/></svg>Cada representante solo ve a sus hijos</div>
+</section>
+
+<!-- 3 · Externos -->
+<section class="abs card ext push" style="left:1120px;top:170px">
+  <span class="bubble"><svg class="ic"><use href="#i-bell"/></svg></span>
+  <div><h3>Notificaciones push</h3><p>Llegan al celular aunque la app esté cerrada, en Android y iPhone.</p></div>
+</section>
+<section class="abs card ext" style="left:1120px;top:287px">
+  <span class="bubble"><svg class="ic"><use href="#i-map"/></svg></span>
+  <div><h3>Mapas y rutas</h3><p>Google Maps muestra el mapa. OSRM calcula el camino y la hora de llegada.</p></div>
+</section>
+<section class="abs card ext" style="left:1120px;top:404px">
+  <span class="bubble"><svg class="ic"><use href="#i-sms"/></svg></span>
+  <div><h3>Código por SMS o WhatsApp</h3><p>Verifica el número de celular al crear la cuenta.</p></div>
+</section>
+<section class="abs card ext" style="left:1120px;top:521px">
+  <span class="bubble"><svg class="ic"><use href="#i-msg"/></svg></span>
+  <div><h3>Asistente con IA</h3><p>Gemini responde dudas en el chat de soporte.</p></div>
+</section>
+
+<svg class="wires" viewBox="0 0 1600 850" aria-hidden="true">
+  <g fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M480 235 H617" stroke="#E8930C" stroke-dasharray="8 6" marker-end="url(#m-amber)"/>
+    <path d="M620 395 H483" stroke="#E8930C" stroke-dasharray="8 6" marker-end="url(#m-amber)"/>
+    <path d="M480 555 H617" stroke="#1B4D89" marker-start="url(#m-navy)" marker-end="url(#m-navy)"/>
+    <path d="M980 219 H1117" stroke="#1E9E62" marker-end="url(#m-green)"/>
+    <path d="M980 336 H1117" stroke="#7A8799" marker-start="url(#m-gray)" marker-end="url(#m-gray)"/>
+    <path d="M980 453 H1117" stroke="#7A8799" marker-start="url(#m-gray)" marker-end="url(#m-gray)"/>
+    <path d="M980 570 H1117" stroke="#7A8799" marker-start="url(#m-gray)" marker-end="url(#m-gray)"/>
+    <path d="M1540 219 H1566 V656 H34 V395 H57" stroke="#1E9E62" marker-end="url(#m-green)"/>
+  </g>
+</svg>
+<div class="lbl amber" style="left:550px;top:235px">Envía su ubicación<br>cada 5 segundos</div>
+<div class="lbl amber" style="left:550px;top:395px">Muestra la buseta<br>en vivo</div>
+<div class="lbl navy" style="left:550px;top:555px">Revisa y aprueba</div>
+<div class="lbl green" style="left:1050px;top:219px">Envía avisos</div>
+<div class="lbl gray" style="left:1050px;top:336px">Pide rutas</div>
+<div class="lbl gray" style="left:1050px;top:453px">Verifica</div>
+<div class="lbl gray" style="left:1050px;top:570px">Consulta</div>
+<div class="lbl green" style="left:900px;top:656px">El aviso llega al celular del chofer o del representante</div>
+
+<!-- Cómo funciona -->
+<div class="abs steps-t">Cómo funciona un recorrido</div>
+<section class="abs card step a" style="left:60px"><span class="n">1</span><div><b>El chofer inicia</b><p>La app envía la ubicación de la buseta cada 5 segundos.</p></div></section>
+<section class="abs card step a" style="left:433px"><span class="n">2</span><div><b>El servidor la comparte</b><p>Supabase la muestra solo a los representantes de esa ruta.</p></div></section>
+<section class="abs card step" style="left:806px"><span class="n">3</span><div><b>Detecta lo importante</b><p>Avisa cuando la buseta está cerca, se retrasa o se desvía.</p></div></section>
+<section class="abs card step g" style="left:1179px;width:361px"><span class="n">4</span><div><b>El padre se entera</b><p>Recibe «La buseta está cerca, ten lista a Emilia» y la ve en el mapa.</p></div></section>
+<svg class="abs chev" style="left:412px" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l8 9-8 9"/></svg>
+<svg class="abs chev" style="left:785px" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l8 9-8 9"/></svg>
+<svg class="abs chev" style="left:1158px" viewBox="0 0 14 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l8 9-8 9"/></svg>
+</body>
+</html>

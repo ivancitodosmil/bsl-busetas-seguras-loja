@@ -1,0 +1,95 @@
+{
+  "expo": {
+    "name": "BSL",
+    "slug": "bsl",
+    "version": "2.0.0",
+    "scheme": "bsl",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bsl.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BSL usa tu ubicación para mostrar la buseta a los representantes durante un recorrido.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "BSL transmite la ubicación de la buseta a los representantes de tu ruta mientras hay un recorrido iniciado, incluso con la app en segundo plano.",
+        "NSCameraUsageDescription": "BSL usa la cámara para escanear el código QR del chofer y para tu foto de perfil.",
+        "NSFaceIDUsageDescription": "BSL usa Face ID para que entres sin escribir tu contraseña.",
+        "UIBackgroundModes": [
+          "location",
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.bsl.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "BSL transmite la ubicación de la buseta a los representantes de tu ruta mientras hay un recorrido iniciado, incluso con la app en segundo plano."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#123A68"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "BSL usa la cámara para escanear el código QR del chofer."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "BSL usa tus fotos para elegir la foto de perfil o del estudiante."
+        }
+      ],
+      "expo-asset",
+      "expo-font",
+      "expo-secure-store",
+      "expo-local-authentication",
+      "expo-sharing",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF",
+          "imageWidth": 200
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "REEMPLAZAR-CON-TU-PROJECT-ID"
+      }
+    }
+  }
+}

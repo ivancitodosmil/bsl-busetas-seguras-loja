@@ -1,0 +1,22 @@
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Variables de entorno (contienen credenciales)
+.env
+.env.local
+.env.*.local
+
+# Keystore de firma (NUNCA subir a git — respáldalo aparte en un lugar seguro)
+credentials/
+*.keystore
+*.jks
+
+# iOS / Android builds
+*.ipa
+*.apk
+*.aab
+ios/
+android/
+pruebas/.salida/
