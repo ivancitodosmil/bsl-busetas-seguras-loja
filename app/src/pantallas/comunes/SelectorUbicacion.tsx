@@ -185,7 +185,7 @@ export default function SelectorUbicacion() {
       mover({ latitude: l.coords.latitude, longitude: l.coords.longitude });
       setPrecision(l.coords.accuracy != null ? Math.round(l.coords.accuracy) : null);
     } catch {
-      toast.mostrar('No pudimos obtener tu ubicación. Mueve el mapa hasta el portón.', { tipo: 'error' });
+      toast.mostrar('No pudimos obtener tu ubicación. Toca el portón en el mapa.', { tipo: 'error' });
     } finally {
       setUbicando(false);
     }
@@ -233,7 +233,7 @@ export default function SelectorUbicacion() {
             value={consulta}
             onChangeText={setConsulta}
             placeholder="Calle, barrio o lugar"
-            ayuda="Sugerencias mientras escribes. Luego ajusta el pin."
+            ayuda="Sugerencias mientras escribes. Luego toca el portón en el mapa."
             autoCorrect={false}
             returnKeyType="search"
             derecha={buscando ? <ActivityIndicator color={c.primary} /> : <Search size={20} color={c.text3} strokeWidth={2} />}
@@ -254,8 +254,8 @@ export default function SelectorUbicacion() {
               </View>
             </Pressable>
           ))}
-          {sinResultados && !buscando ? <Texto v="nota" color="text3">No encontramos ese lugar. Prueba con el nombre de la calle o mueve el mapa hasta el portón.</Texto> : null}
-          {sinConexion && !buscando ? <Texto v="nota" color="warningInk">No pudimos buscar. Revisa tu conexión o mueve el mapa hasta el portón.</Texto> : null}
+          {sinResultados && !buscando ? <Texto v="nota" color="text3">No encontramos ese lugar. Prueba con el nombre de la calle o toca el portón en el mapa.</Texto> : null}
+          {sinConexion && !buscando ? <Texto v="nota" color="warningInk">No pudimos buscar. Revisa tu conexión o toca el portón en el mapa.</Texto> : null}
         </View>
 
         {/* Mapa con pin fijo al centro */}
@@ -265,13 +265,14 @@ export default function SelectorUbicacion() {
             style={{ flex: 1 }}
             initialRegion={{ ...centroInicial, latitudeDelta: DELTA, longitudeDelta: DELTA }}
             onRegionChangeComplete={alMoverMapa}
+            onPress={(e) => { mover(e.nativeEvent.coordinate); setPrecision(null); }}
             userInterfaceStyle={oscuro ? 'dark' : 'light'}
             showsUserLocation
             showsMyLocationButton={false}
             toolbarEnabled={false}
             rotateEnabled={false}
             pitchEnabled={false}
-            accessibilityLabel="Mapa para ubicar el portón. Mueve el mapa hasta que el pin quede en el lugar."
+            accessibilityLabel="Mapa para ubicar el portón. Toca el lugar o mueve el mapa hasta que el pin quede en él."
           />
           <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
             <View style={{ marginBottom: 40, alignItems: 'center' }}>
@@ -283,7 +284,7 @@ export default function SelectorUbicacion() {
             </View>
           </View>
           <View pointerEvents="none" style={{ position: 'absolute', left: 10, top: 10, backgroundColor: '#0F1B2D', borderRadius: radio.pill, paddingHorizontal: 12, height: 30, justifyContent: 'center' }}>
-            <Texto v="nota" color="#FFFFFF">Mueve el mapa hasta el portón</Texto>
+            <Texto v="nota" color="#FFFFFF">Toca el portón en el mapa</Texto>
           </View>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: esp.md }}>

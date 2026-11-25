@@ -60,12 +60,14 @@ function estiloMarcador(props) {
 }
 
 const MapView = React.forwardRef(function MapView(props, ref) {
-  const { style, initialRegion, region, onRegionChangeComplete, scrollEnabled = true, zoomEnabled = true, children } = props;
+  const { style, initialRegion, region, onRegionChangeComplete, onPress, scrollEnabled = true, zoomEnabled = true, children } = props;
   const caja = React.useRef(null);
   const mapa = React.useRef(null);
   const grupo = React.useRef(null);
   const alMover = React.useRef(onRegionChangeComplete);
   alMover.current = onRegionChangeComplete;
+  const alTocar = React.useRef(onPress);
+  alTocar.current = onPress;
   const [listo, setListo] = React.useState(false);
 
   React.useImperativeHandle(ref, () => ({
@@ -99,6 +101,10 @@ const MapView = React.forwardRef(function MapView(props, ref) {
         const c = m.getCenter();
         if (alMover.current) alMover.current({ latitude: c.lat, longitude: c.lng, ...deltaDe(m) }, { isGesture: porGesto });
         porGesto = false;
+      });
+      // Tocar el mapa entrega la coordenada como en react-native-maps (nativeEvent.coordinate).
+      m.on('click', (e) => {
+        if (alTocar.current) alTocar.current({ nativeEvent: { coordinate: { latitude: e.latlng.lat, longitude: e.latlng.lng } } });
       });
       grupo.current = L.layerGroup().addTo(m);
       mapa.current = m;
