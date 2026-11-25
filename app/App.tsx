@@ -29,26 +29,10 @@ if (modoDemo && typeof window !== 'undefined') {
   (window as any).__bslDemo = { servidorDemo, simulador, ID, trazar, avisos: useAvisos };
 }
 
-// Versión web en una pantalla grande: la app se muestra del ancho de un celular, centrada sobre un
-// fondo azul grisáceo. El transform hace que las hojas y la alarma (position: fixed) queden dentro
-// del celular y no ocupen toda la ventana. En un celular real no cambia nada.
+// Versión web en una pantalla grande: la app del ancho de un celular y, en laptops y computadoras,
+// la marca BSL con su animación a la izquierda (src/web/escaparate.ts). En un celular no cambia nada.
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
-  const estilo = document.createElement('style');
-  estilo.textContent = `
-    @media (min-width: 600px) {
-      html { background: #DCE3EC; }
-      body {
-        max-width: 430px; height: min(100vh, 932px); margin: 0 auto; position: relative;
-        top: max(0px, calc((100vh - 932px) / 2));
-        transform: translateZ(0); overflow: hidden; background: #F3F6FA;
-        box-shadow: 0 24px 60px rgba(18, 58, 104, 0.25), 0 0 0 1px rgba(18, 58, 104, 0.08);
-        border-radius: 24px;
-      }
-      #root { height: 100%; }
-    }
-    @media (min-width: 600px) and (max-height: 940px) { body { border-radius: 0; } }
-  `;
-  document.head.appendChild(estilo);
+  require('./src/web/escaparate').montarEscaparate();
 }
 
 // bsl://i/9H4T6L2M o https://bsl.app/i/9H4T6L2M abren "Vincular" con el código ya escrito.
