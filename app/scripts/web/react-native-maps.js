@@ -92,8 +92,10 @@ const MapView = React.forwardRef(function MapView(props, ref) {
     cargarLeaflet().then((L) => {
       if (!vivo || !caja.current || mapa.current) return;
       const r = region || initialRegion || { latitude: -3.99, longitude: -79.2, latitudeDelta: 0.05 };
-      const m = L.map(caja.current, { zoomControl: zoomEnabled, dragging: scrollEnabled, scrollWheelZoom: zoomEnabled, doubleClickZoom: zoomEnabled, touchZoom: zoomEnabled, attributionControl: true })
+      const m = L.map(caja.current, { zoomControl: false, dragging: scrollEnabled, scrollWheelZoom: zoomEnabled, doubleClickZoom: zoomEnabled, touchZoom: zoomEnabled, attributionControl: true })
         .setView([r.latitude, r.longitude], zoomDe(r.latitudeDelta));
+      // Los botones + y − van abajo a la derecha, para no tapar las indicaciones de la app.
+      if (zoomEnabled) L.control.zoom({ position: 'bottomright' }).addTo(m);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(m);
       let porGesto = false;
       m.on('dragstart zoomstart', () => { porGesto = true; });

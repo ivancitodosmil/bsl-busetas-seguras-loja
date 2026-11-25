@@ -67,6 +67,32 @@ async function buscarNominatim(texto: string, senal: AbortSignal): Promise<Suger
   });
 }
 
+// Calle y barrio del punto del mapa: Nominatim y, si no responde, Photon.
+async function direccionDe(p: Coordenada): Promise<{ calle: string | null; barrio: string | null } | null> {
+  const control = new AbortController();
+  const reloj = setTimeout(() => control.abort(), 8000);
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&lat=${p.latitude}&lon=${p.longitude}`,
+      { signal: control.signal, headers: { 'User-Agent': 'BSL-Busetas-Seguras-Loja/1.0', 'Accept-Language': 'es' } },
+    );
+    const d = (await r.json()) as any;
+    const a = d?.address ?? {};
+    const calle = a.road ?? a.pedestrian ?? a.residential ?? null;
+    if (calle) return { calle, barrio: a.neighbourhood ?? a.suburb ?? a.quarter ?? null };
+  } catch { /* se intenta con Photon */ }
+  try {
+    const r = await fetch(`https://photon.komoot.io/reverse?lat=${p.latitude}&lon=${p.longitude}`, { signal: control.signal });
+    const d = (await r.json()) as { features?: any[] };
+    const pr = d.features?.[0]?.properties ?? {};
+    return { calle: pr.street ?? (pr.osm_key === 'highway' ? pr.name : null) ?? null, barrio: pr.district ?? pr.locality ?? null };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(reloj);
+  }
+}
+
 // Busca en los dos servicios a la vez y junta los resultados sin repetir lugares cercanos.
 async function buscar(texto: string, control: AbortController): Promise<Sugerencia[]> {
   const [photon, nominatim] = await Promise.allSettled([buscarPhoton(texto, control.signal), buscarNominatim(texto, control.signal)]);
@@ -118,6 +144,7 @@ export default function SelectorUbicacion() {
   const [etiquetaLibre, setEtiquetaLibre] = useState(etiquetaInicial === 'Otra' ? ini?.label ?? '' : '');
   const [uso, setUso] = useState<Uso>(ini?.kind === 'pickup' || ini?.kind === 'dropoff' ? ini.kind : 'both');
   const [errores, setErrores] = useState<{ calle?: string; etiqueta?: string }>({});
+  const [fijando, setFijando] = useState(false);
 
   // Si se sale sin guardar, quien abrió el selector recibe null.
   useEffect(() => {
@@ -196,9 +223,11 @@ export default function SelectorUbicacion() {
     if (detalle?.isGesture) setPrecision(null); // el pin ya no es la lectura del GPS
   };
 
-  const guardar = () => {
+  const guardar = (extra?: { calle?: string; barrio?: string | null }) => {
+    const calleFinal = (extra?.calle ?? calle).trim();
+    const barrioFinal = extra?.barrio ?? barrio;
     const e: typeof errores = {};
-    if (calle.trim().length < 3) e.calle = 'Escribe la calle principal.';
+    if (calleFinal.length < 3) e.calle = 'Escribe la calle principal.';
     if (!escuela && etiqueta === 'Otra' && etiquetaLibre.trim().length < 2) e.etiqueta = 'Ponle un nombre, por ejemplo "Casa de la tía".';
     setErrores(e);
     if (Object.keys(e).length) return;
@@ -206,10 +235,10 @@ export default function SelectorUbicacion() {
     const borrador: DireccionBorrador = {
       label: escuela ? ini?.label ?? 'Escuela' : etiqueta === 'Casa' ? 'Casa' : etiqueta === 'Abuelos' ? 'Casa de los abuelos' : etiquetaLibre.trim(),
       kind: escuela ? 'school' : uso,
-      main_street: calle.trim(),
+      main_street: calleFinal,
       cross_street: limpio(cruce),
       house_number: escuela ? null : limpio(numero),
-      neighborhood: escuela ? ini?.neighborhood ?? null : limpio(barrio),
+      neighborhood: escuela ? ini?.neighborhood ?? null : limpio(barrioFinal ?? ''),
       reference: limpio(referencia),
       receiver_note: escuela ? null : limpio(recibe),
       latitude: coord.latitude,
@@ -221,11 +250,37 @@ export default function SelectorUbicacion() {
     nav.goBack();
   };
 
+  // Tocar el pin amarillo fija la ubicación y guarda. Si falta la calle, se toma del mapa.
+  const fijarAqui = async () => {
+    if (fijando) return;
+    let c = calle.trim();
+    let b: string | null = barrio.trim() || null;
+    if (c.length < 3) {
+      setFijando(true);
+      const d = await direccionDe(coord);
+      setFijando(false);
+      if (d?.calle) {
+        c = d.calle;
+        setCalle(d.calle);
+      }
+      if (!b && d?.barrio) {
+        b = d.barrio;
+        setBarrio(d.barrio);
+      }
+    }
+    if (c.length < 3) {
+      setErrores({ ...errores, calle: 'No encontramos el nombre de la calle. Escríbelo y vuelve a tocar el pin.' });
+      toast.mostrar('Escribe la calle principal y vuelve a tocar el pin.', { tipo: 'error' });
+      return;
+    }
+    guardar({ calle: c, barrio: b });
+  };
+
   if (!opciones) return null;
 
   return (
     <ConTeclado>
-      <Pantalla titulo={opciones.titulo} onAtras={() => nav.goBack()} pie={<Boton titulo={escuela ? 'Guardar ubicación' : 'Guardar dirección'} onPress={guardar} />}>
+      <Pantalla titulo={opciones.titulo} onAtras={() => nav.goBack()} pie={<Boton titulo={escuela ? 'Guardar ubicación' : 'Guardar dirección'} onPress={() => guardar()} />}>
         {/* Búsqueda */}
         <View style={{ backgroundColor: c.surface, borderRadius: radio.grande, padding: esp.lg, gap: esp.sm, ...sombra(c, 2) }}>
           <CampoTexto
@@ -274,17 +329,27 @@ export default function SelectorUbicacion() {
             pitchEnabled={false}
             accessibilityLabel="Mapa para ubicar el portón. Toca el lugar o mueve el mapa hasta que el pin quede en él."
           />
-          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <View style={{ marginBottom: 40, alignItems: 'center' }}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.accent, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', elevation: 4 }}>
-                <MapPin size={22} color={c.onAccent} strokeWidth={2.4} />
-              </View>
-              <View style={{ width: 3, height: 14, backgroundColor: c.accent }} />
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#0F1B2D', opacity: 0.45, marginTop: -2 }} />
+          <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+            <View pointerEvents="box-none" style={{ marginBottom: 40, alignItems: 'center' }}>
+              <Pressable
+                onPress={fijarAqui}
+                accessibilityRole="button"
+                accessibilityLabel={escuela ? 'Fijar la ubicación de la escuela aquí y guardar' : 'Fijar mi casa aquí y guardar'}
+                hitSlop={14}
+                style={({ pressed }) => ({ alignItems: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] })}
+              >
+                <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: c.accent, borderWidth: 3, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', elevation: 5, shadowColor: '#0F1B2D', shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } }}>
+                  {fijando ? <ActivityIndicator color={c.onAccent} /> : <MapPin size={26} color={c.onAccent} strokeWidth={2.4} />}
+                </View>
+                <View style={{ width: 3, height: 12, backgroundColor: c.accent }} />
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#0F1B2D', opacity: 0.45, marginTop: -2 }} />
+              </Pressable>
             </View>
           </View>
-          <View pointerEvents="none" style={{ position: 'absolute', left: 10, top: 10, backgroundColor: '#0F1B2D', borderRadius: radio.pill, paddingHorizontal: 12, height: 30, justifyContent: 'center' }}>
-            <Texto v="nota" color="#FFFFFF">Toca el portón en el mapa</Texto>
+          <View pointerEvents="none" style={{ position: 'absolute', left: 10, right: 10, top: 10, alignItems: 'flex-start' }}>
+            <View style={{ backgroundColor: '#0F1B2D', borderRadius: radio.pill, paddingHorizontal: 12, minHeight: 30, justifyContent: 'center' }}>
+              <Texto v="nota" color="#FFFFFF">Toca tu portón en el mapa y luego el pin amarillo</Texto>
+            </View>
           </View>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: esp.md }}>
